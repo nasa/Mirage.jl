@@ -1,4 +1,14 @@
 using Test
+using Mirage
+
+# Capture the live-reload hook state BEFORE Revise is loaded: with no Revise in
+# the session, live_revise! must be an inert no-op so that Mirage carries no hard
+# dependency on a development-only tool.
+const _hook_before_revise = Mirage._live_revise_hook[]
+
+# Loading Revise should activate the MirageReviseExt package extension, which
+# installs the hot-reload hook. `using` must live at top level, not in a testset.
+using Revise
 
 include("MirageTestDemos.jl")
 using .MirageTestDemos
@@ -21,6 +31,11 @@ end
 
 @testset "Mirage" begin
     api_behavior_tests()
+
+    @testset "Revise extension" begin
+        @test _hook_before_revise === nothing
+        @test Mirage._live_revise_hook[] !== nothing
+    end
 
     if _interactive_tests_enabled()
         @info "Running interactive Mirage demo windows. Close each window to advance." demos = getfield.(demos(), :name)

@@ -1,0 +1,7 @@
+[deps]
+CImGui = "5d785b6c-b76f-510e-a07c-3070796c7e87"
+Mirage = "e54eaeca-a684-404c-9867-c26beaca1479"
+Revise = "295af30f-e4ad-537b-8983-00126c2a3abe"
+
+[sources]
+Mirage = {path = ".."}

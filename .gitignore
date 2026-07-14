@@ -1,2 +1,19 @@
+# Julia environment manifests (regenerated per-user; not committed for libraries)
+/Manifest.toml
+/docs/Manifest.toml
+/examples/Manifest.toml
+
+# Documentation build output
+/docs/build/
+
+# Dear ImGui persisted layout state
 *imgui.ini
+
+# macOS / editor cruft
+.DS_Store
 *.DS_Store
+
+# Planning / office documents that are not part of the package
+*.numbers
+*.xlsx
+*.pptx

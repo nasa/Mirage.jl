@@ -1,76 +1,116 @@
 # Getting Started
 
-This guide will walk you through installing Mirage.jl, setting up a basic scene, and rendering your first frame.
+This guide walks you through installing Mirage.jl and opening your first application
+window.
 
 ## Installation
 
-First, you need to have Julia installed on your system. You can download it from the [official Julia website](https://julialang.org/downloads/).
+First, you need Julia 1.11 or newer, available from the
+[official Julia website](https://julialang.org/downloads/).
 
-Once Julia is installed, open the Julia REPL (interactive terminal) and use the built-in package manager, `Pkg`, to add Mirage.jl.
+Until Mirage.jl's registration in the General registry completes, install it
+directly from GitHub:
 
 ```julia
 import Pkg
-Pkg.add("Mirage")
+Pkg.add(url = "https://github.com/groverburger/Mirage.jl")
 ```
 
-## Your First Render: A Simple Rectangle
+Once registered, this becomes simply `Pkg.add("Mirage")`.
 
-The core of a Mirage.jl application consists of two parts: initialization and a render loop.
+## Your first app: a spinning square
 
-1.  `initialize()`: Sets up the window, graphics context, and all necessary resources.
-2.  `start_render_loop(render_function)`: Starts a loop that repeatedly calls your custom `render_function` to draw each frame.
-
-Let's create a simple application that draws a red rectangle on a black background.
+A Mirage application is a [`MirageApp`](@ref) (window + OpenGL + Dear ImGui context)
+driven by [`run!`](@ref), which calls your frame function every frame. Drawing
+happens inside a *canvas*; the easiest one is [`draw_background_canvas!`](@ref),
+which fills the whole window:
 
 ```julia
-import Mirage
+using Mirage
 
-# The main function of our application
-function main()
-    # 1. Initialize the window and rendering context.
-    # This creates an 800x600 window by default.
-    Mirage.initialize()
-    
-    # 2. Define the function that will be called for every frame.
-    function render()
-        # Clear the screen to a black color.
-        Mirage.clear()
-        
-        # Set the drawing color to red.
-        # `rgba` is a helper to create a color from Red, Green, Blue, and Alpha values (0-255).
-        Mirage.fillcolor(Mirage.rgba(255, 0, 0))
-        
-        # Draw a filled rectangle.
-        # The arguments are x, y, width, height.
-        Mirage.fillrect(100, 100, 200, 150)
+app = MirageApp("Spinning Square"; width = 800, height = 600)
+
+run!(app) do a
+    draw_background_canvas!(a) do canvas, viewport
+        Mirage.save()
+        Mirage.translate(canvas.width / 2, canvas.height / 2)
+        Mirage.rotate(time())
+        Mirage.fillcolor(Mirage.rgba(255, 40, 40))
+        Mirage.fillrect(-55, -55, 110, 110)
+        Mirage.restore()
     end
-    
-    # 3. Start the render loop, passing our `render` function.
-    # This will run until the user closes the window.
-    Mirage.start_render_loop(render)
 end
-
-# Run the main function
-main()
 ```
 
-### Running the Code
+Run it and a window appears with a red square spinning in its center. Close the
+window (or call [`stop!`](@ref)) and `run!` tears everything down.
 
-Save the code above as a Julia file (e.g., `my_app.jl`) and run it from your terminal:
+Three things to notice:
+
+1. **The app layer is exported** (`MirageApp`, `run!`, `draw_background_canvas!`),
+   while **drawing functions are called qualified** — `Mirage.fillrect(...)`,
+   `Mirage.save()` — mirroring how the HTML5 canvas is always accessed through its
+   context (`ctx.fillRect(...)`).
+2. The canvas callback receives the canvas with a **pixel-space 2D projection
+   already applied**, so you can draw immediately in pixel coordinates.
+3. `run!` renders **continuously by default** (`animate = true`). Pass
+   `animate = false` for event-driven rendering that only repaints on input — see
+   [Core Concepts](concepts.md).
+
+## Adding UI
+
+Mirage bundles [Dear ImGui](https://github.com/ocornut/imgui) through
+[CImGui.jl](https://github.com/Gnimuc/CImGui.jl). Add `CImGui` to your project and
+build panels alongside your canvas:
+
+```julia
+using Mirage
+using CImGui
+
+app = MirageApp("With Controls"; width = 900, height = 600)
+speed = Ref(1.0f0)
+
+run!(app) do a
+    draw_background_canvas!(a) do canvas, viewport
+        Mirage.translate(canvas.width / 2, canvas.height / 2)
+        Mirage.rotate(time() * speed[])
+        Mirage.fillcolor(Mirage.rgba(80, 160, 255))
+        Mirage.fillrect(-60, -60, 120, 120)
+    end
+
+    CImGui.Begin("Controls")
+    CImGui.SliderFloat("spin speed", speed, 0.0f0, 5.0f0)
+    CImGui.End()
+end
+```
+
+ImGui widgets read and write plain Julia `Ref`s — there is no retained widget tree
+to synchronize. For docked split-pane layouts instead of floating panels, see
+[`dock_layout!`](@ref) and the [Examples](examples.md).
+
+## Running the examples
+
+The repository ships runnable example apps under `examples/`:
 
 ```sh
-julia my_app.jl
+git clone https://github.com/groverburger/Mirage.jl
+cd Mirage.jl
+julia --project=examples examples/01_minimal_app.jl
 ```
 
-You should see a window appear with a red rectangle.
+## The live-reload workflow
 
-## Common Troubleshooting
+Load your code with Revise tracking it, use [`run_live!`](@ref) instead of `run!`,
+and edits apply to the running app without restarting — window position and
+application state intact:
 
-*   **Window doesn't appear or closes immediately:**
-    *   Ensure your graphics drivers are up to date.
-    *   Make sure you are calling `start_render_loop()`. Without it, the program will initialize, draw one frame, and then exit.
-*   **"Mirage not found" error:**
-    *   Ensure you have installed the package correctly using `Pkg.add("Mirage")`.
-    *   If you are running the code from a script, make sure `using Mirage` is at the top.
-*   **Errors related to file loading (e.g., textures, models):**
-    *   File paths are relative to where you run the Julia script. Ensure the files are in the correct location. For example, if your script needs `assets/player.png`, that path should exist relative to your terminal's current directory.
+```julia
+using Revise
+includet("myapp.jl")     # includet = Revise-tracked include
+MyApp.main()             # main() uses run_live!(...)
+# edit myapp.jl, save — the running window updates in place
+```
+
+Errors in your frame code are logged and skipped rather than crashing the app, so
+you can fix mistakes live. See `examples/02_live_reload.jl` for a complete setup,
+including making script-mode execution self-tracking with `Revise.track`.

@@ -1,70 +1,130 @@
 # Core Concepts
 
-Mirage.jl is built around a few core concepts designed to provide a flexible and intuitive environment for real-time graphics. Understanding these will help you get the most out of the library.
+Mirage.jl is built around a few core concepts designed to provide a flexible and
+intuitive environment for real-time graphics and desktop applications.
 
-## Immediate-Mode Rendering
+## The three tiers of the API
 
-Mirage.jl uses an **immediate-mode** rendering paradigm. This means that graphics commands (like `fillrect()` or `draw_mesh()`) are executed and sent to the GPU for rendering right away. The library does not maintain a persistent scene graph of objects to be drawn. Instead, **you are responsible for drawing everything you want to see on the screen in every single frame.**
+**Tier 1 — the application layer (exported).** `using Mirage` brings in the front
+door: [`MirageApp`](@ref), [`run!`](@ref), [`run_live!`](@ref), [`stop!`](@ref),
+[`draw_canvas!`](@ref), [`draw_background_canvas!`](@ref), [`dock_layout!`](@ref),
+input callbacks, and friends. These names are unique to Mirage and form the
+lifecycle of an application.
 
-This approach is highly flexible and gives you full control over the rendering process. It is often simpler to understand and debug than retained-mode systems, especially for 2D graphics, data visualization, and prototyping.
+**Tier 2 — the drawing API (qualified).** Drawing, mesh, and shader functions are
+public but used qualified — `Mirage.fillrect(...)`, `Mirage.save()`,
+`Mirage.draw_mesh(...)` — mirroring how the HTML5 canvas is always accessed through
+its context (`ctx.fillRect(...)`). This also avoids collisions with `Base.fill`,
+`Base.resize!`, and common plotting packages.
 
-### Comparison to HTML5 Canvas
+**Tier 3 — embedding (advanced).** To host Mirage inside your own GLFW/OpenGL
+window and render loop, call `Mirage.initialize_render_context()` once after
+creating your GL context, then use the drawing API and
+`Mirage.create_canvas`/`Mirage.set_canvas` directly; pair with
+`Mirage.cleanup_render_context()` at shutdown. `MirageApp` does all of this for you.
 
-The 2D API of Mirage.jl is heavily inspired by the **HTML5 Canvas API**. If you have ever used `canvas.getContext('2d')` in JavaScript, you will find the concepts familiar:
+## Immediate-mode rendering
 
--   Drawing commands are issued sequentially.
--   A state machine tracks transformations, colors, and styles.
--   `save()` and `restore()` are used to manage this state.
+Mirage.jl uses an **immediate-mode** rendering paradigm. Graphics commands (like
+`Mirage.fillrect()` or `Mirage.draw_mesh()`) are executed and sent to the GPU right
+away. The library does not maintain a persistent scene graph. Instead, **you draw
+everything you want to see in every frame** — your render function is effectively a
+pure function of your current application state, and your application state is just
+Julia variables.
 
-## The State Stack: `save()` and `restore()`
+The same is true of the UI: Dear ImGui is an immediate-mode GUI library, so each
+frame your code says "a button here, a slider there" and ImGui handles interaction.
+There are no widget trees, no callbacks to wire, and no state to synchronize.
 
-One of the most powerful features of the 2D API is the graphics state stack. The current state includes:
+## Apps, canvases, and viewports
 
--   The current transformation matrix (position, rotation, and scale).
--   Fill and stroke colors.
--   Stroke width.
+A [`MirageApp`](@ref) owns the OS window, the OpenGL context, and the Dear ImGui
+context. Mirage content is rendered into **canvases** — offscreen render targets —
+which are then composited into the ImGui frame:
 
-When you call `save()`, Mirage.jl pushes a complete copy of the current graphics state onto a stack. When you call `restore()`, it pops the last-saved state off the stack, instantly reverting all changes made since the last `save()`.
+- [`draw_background_canvas!`](@ref) fills the entire window with a canvas; panels
+  float (and can dock) on top. This is the "the canvas *is* the app" layout for
+  maps, viewers, and dashboards.
+- [`draw_canvas!`](@ref) renders a canvas inside the current ImGui window, sized to
+  its content region. Combine with [`dock_layout!`](@ref) for split-pane layouts.
 
-This is extremely useful for hierarchical drawing. For example, to draw a planet and its moon:
+Both invoke your callback as `render!(canvas, viewport)`. The `canvas` carries its
+pixel dimensions; the [`CanvasViewport`](@ref) reports interaction state — hover,
+click, and mouse position relative to the canvas — which is how canvases respond to
+the mouse (see `examples/03_paint_2d.jl`).
 
-1.  `save()` the current state.
-2.  `translate()` to the planet's position.
-3.  Draw the planet.
-4.  `save()` the planet-relative state.
-5.  `translate()` to the moon's position relative to the planet.
-6.  `rotate()` the moon around its own axis.
-7.  Draw the moon.
-8.  `restore()` to return to the planet-relative state (before the moon was drawn).
-9.  `restore()` again to return to the original state (before the planet was drawn).
+By default the callback runs with a **pixel-space 2D orthographic projection**
+already applied. For 3D, pass `projection = :none` and set your own camera with
+`Mirage.update_perspective_projection_matrix` and `Mirage.lookat`.
+
+## Continuous vs. event-driven rendering
+
+`run!` renders continuously by default (`animate = true`), like a game loop. For
+tools that sit idle most of the time, pass `animate = false`: the loop blocks
+waiting for input events and repaints only when something happens.
+[`request_frame!`](@ref) and [`stop!`](@ref) wake the loop from timers and other
+tasks. Pass a function `app -> Bool` to decide per frame.
+
+## The state stack: `save()` and `restore()`
+
+The current drawing state includes the transformation matrix (position, rotation,
+scale), fill and stroke colors, and stroke width. `Mirage.save()` pushes a complete
+copy of the state onto a stack; `Mirage.restore()` pops it, reverting all changes
+since the matching `save()`.
+
+This makes hierarchical drawing natural — for example, a planet and its moon:
 
 ```julia
-# Pseudocode
-save()       # Save world origin state
-translate(300, 300) # Move to planet's position
+Mirage.save()                 # save world origin state
+Mirage.translate(300, 300)    # move to the planet's position
 draw_planet()
 
-save()       # Save planet state
-translate(100, 0)   # Move to moon's position relative to planet
-rotate(angle)  # Rotate the moon
+Mirage.save()                 # save planet-relative state
+Mirage.translate(100, 0)      # move to the moon, relative to the planet
+Mirage.rotate(angle)          # spin the moon
 draw_moon()
 
-restore()    # Restore to planet state
-restore()    # Restore to world origin state
+Mirage.restore()              # back to the planet's frame
+Mirage.restore()              # back to the world origin
 ```
 
-## The Rendering Pipeline: Meshes and Shaders
+## The rendering pipeline: meshes and shaders
 
-Behind the scenes, all drawing operations in Mirage.jl are ultimately converted into `Mesh` objects and drawn to the screen.
+Behind the scenes, all drawing operations are ultimately `Mesh` objects drawn by a
+shader:
 
--   **`Mesh`**: A `Mesh` is a container for vertex data stored on the GPU. This includes vertex positions, texture coordinates, normals, etc. Mirage provides helpers like `create_cube()` and `create_uv_sphere()` to generate primitive meshes, and `load_obj_mesh()` to load them from files.
+- **`Mirage.Mesh`** holds vertex data on the GPU (positions, texture coordinates,
+  normals). Helpers: `Mirage.create_cube()`, `Mirage.create_uv_sphere()`,
+  `Mirage.load_obj_mesh()`, or `Mirage.create_mesh()` with custom
+  `Mirage.VertexAttribute` layouts.
+- **`Mirage.ShaderInfo`** holds a compiled GLSL program. Mirage's default shader
+  handles position, color, and texture mapping for all built-in 2D and 3D drawing.
+- **`Mirage.draw_mesh(mesh, ...)`** is the fundamental drawing call — with a
+  texture, a tint color, or a custom shader plus a uniform-setup callback for full
+  control (see the lit-scene demo in the test suite).
 
--   **`ShaderInfo`**: This holds a compiled GLSL shader program. Mirage.jl uses a default shader for all its 2D and 3D drawing, which handles basic position, color, and texture mapping.
+When you call a 2D function like `Mirage.fillrect()`, Mirage updates a reusable
+"immediate mode" quad mesh and draws it with a blank white texture tinted by the
+current fill color.
 
--   **`draw_mesh(mesh, texture, color)`**: This is the fundamental drawing call. It tells the GPU to draw the vertex data from a `Mesh` using the active shader, applying a given texture and tint color.
+## Live reloading
 
-When you call a 2D function like `fillrect()`, Mirage.jl performs these steps internally:
+[`run_live!`](@ref) installs [`live_revise!`](@ref) as a per-frame hook: when the
+`Revise` package is loaded (activating Mirage's `MirageReviseExt` extension), edits
+to Revise-tracked code apply to the running app. Because Mirage invokes your frame
+and canvas callbacks through `invokelatest`, redefined functions take effect on the
+very next frame. Errors thrown by your frame code are logged once per distinct
+error and frames are skipped until you save a fix — the app never dies mid-edit.
 
-1.  Gets a pre-defined "immediate mode" mesh (a simple quad).
-2.  Updates its vertices to match the rectangle's position and size.
-3.  Calls `draw_mesh()` with a blank white texture, tinted by the current fill color.
+Revise is a weak dependency: without it, `run_live!` warns and runs without
+reloading.
+
+## Limitations to know about
+
+- **Main thread only.** GLFW requires the window and render loop on Julia's main
+  thread. `request_frame!` and `stop!` are safe to call from other tasks/timers;
+  other Mirage calls are not.
+- **One app at a time.** Mirage keeps a single global render context; run one
+  `MirageApp` per process (sequential apps are fine).
+- **Nested canvas rendering** (`draw_canvas!` inside another canvas callback) is
+  not supported; render offscreen canvases before the frame or in a prior pass.

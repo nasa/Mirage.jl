@@ -1,21 +1,40 @@
 # Mirage.jl
 
-Welcome to Mirage.jl! A lightweight, immediate-mode 2D & 3D rendering library for Julia.
+A hardware-accelerated 2D & 3D graphics library for Julia with an HTML5 Canvas–style
+API, plus a batteries-included application layer for building standalone desktop GUI
+apps on top of Dear ImGui (via CImGui.jl) and GLFW.
 
 ## Overview
 
-Mirage.jl provides a simple and productive way to create real-time graphics. It is designed for developers, researchers, and artists who want to quickly visualize algorithms, render simulations, or build custom interactive applications without the overhead of a large engine. Its API is heavily inspired by the simplicity and ease of use of the HTML5 Canvas. Mirage.jl easily composes with other libraries such as CImGui.jl to create feature-rich applications. This expressiveness, combined with Julia's REPL-driven development process, unlocks unparalleled development speed.
+Mirage.jl provides a simple and productive way to create real-time graphics and the
+desktop applications around them. It is designed for developers, researchers, and
+engineers who want to visualize algorithms, render simulations, or build custom
+interactive tools without the overhead of a large engine or a web stack. The drawing
+API is heavily inspired by the HTML5 Canvas; the application layer wires OpenGL,
+Dear ImGui, and GLFW together so a full GUI app starts with one constructor. This,
+combined with Julia's REPL-driven development and Revise-powered live reloading,
+makes GUI iteration feel like ordinary Julia development.
+
+Mirage.jl is used in production in SHERPA, a lunar surface mission-planning tool at
+the NASA Ames Research Center.
 
 ### Key Features
 
-*   **Immediate-Mode API**: A simple, stateful API for 2D drawing (`fillrect`, `stroke`, `translate`, `rotate`). If you know the HTML5 Canvas, you'll feel right at home.
-*   **Simple 3D Rendering**: Load `.obj` models or create custom procedural meshes like cubes and spheres. Position them in 3D space with a simple camera system.
-*   **Lightweight and Cross-Platform**: Built on top of GLFW.jl and ModernGL.jl, Mirage.jl is easy to set up and runs on Windows, macOS, and Linux.
-*   **State Management**: A stack-based graphics state (`save()` and `restore()`) makes it easy to manage transformations and styles in complex scenes.
+- **Desktop application layer**: `MirageApp` + `run!` give you a window, ImGui
+  context, docking, DPI-scaled fonts, and canvas-in-window rendering with
+  `draw_canvas!` and `draw_background_canvas!`.
+- **Immediate-mode 2D API**: `Mirage.fillrect`, `Mirage.stroke`, `Mirage.translate`,
+  `Mirage.rotate` — if you know the HTML5 Canvas, you'll feel right at home.
+- **Simple 3D rendering**: load `.obj` models or create procedural meshes, position
+  them with a perspective/lookat camera, or drop down to custom shaders.
+- **REPL live reload**: `run_live!` hot-reloads your code while the app runs (via a
+  Revise package extension), and frame errors are logged and skipped, not fatal.
+- **State management**: a stack-based graphics state (`Mirage.save()` /
+  `Mirage.restore()`) for transformations and styles.
 
 ### Navigation
 
-*   **[Getting Started](getting_started.md)**: Install Mirage.jl and render your first shape in minutes.
-*   **[Core Concepts](concepts.md)**: Understand the key ideas behind Mirage.jl, including the immediate-mode paradigm and the rendering pipeline.
-*   **[API Reference](api_reference.md)**: A detailed breakdown of all available functions and types.
-*   **[Examples](examples.md)**: Practical code for 2D and 3D scenes to get you started.
+- **[Getting Started](getting_started.md)**: install Mirage.jl and open your first app window.
+- **[Core Concepts](concepts.md)**: the immediate-mode paradigm, the app layer, canvases, and the state stack.
+- **[API Reference](api_reference.md)**: a detailed breakdown of all functions and types.
+- **[Examples](examples.md)**: runnable example apps and annotated snippets.
