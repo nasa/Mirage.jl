@@ -1,0 +1,12 @@
+Roboto-Regular.ttf
+
+Roboto font, Copyright 2011 Google Inc. All Rights Reserved.
+Licensed under the Apache License, Version 2.0.
+
+You may obtain a copy of the License at:
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+This font is bundled with Mirage.jl and loaded as the default UI font. It is the
+same Apache-2.0 license under which Mirage.jl itself is distributed; see the LICENSE
+file at the repository root for the full text.

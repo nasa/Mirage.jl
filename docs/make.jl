@@ -3,6 +3,7 @@ using Documenter, Mirage
 makedocs(
     sitename = "Mirage.jl Documentation",
     modules = [Mirage],
+    format = Documenter.HTML(repolink = "https://github.com/groverburger/Mirage.jl"),
     pages = [
         "Home" => "index.md",
         "Getting Started" => "getting_started.md",
