@@ -8,11 +8,19 @@ as a place to *feel* the API before building a real app.
 Each example is a standalone script. From the repository root:
 
 ```sh
+julia --project=examples -e 'using Pkg; Pkg.instantiate()'
 julia --project=examples examples/01_minimal_app.jl
 ```
 
-The first run instantiates the example environment (it uses the in-repo Mirage via a
-path dependency). Close the app window to exit.
+The environment uses the in-repo Mirage via a path dependency. Close the app window
+to exit.
+
+If Mirage's dependencies have changed since the environment was last instantiated,
+refresh the local manifest before running an example:
+
+```sh
+julia --project=examples -e 'using Pkg; Pkg.resolve(); Pkg.instantiate()'
+```
 
 ## The live-reload workflow
 

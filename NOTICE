@@ -1,16 +1,13 @@
 Mirage.jl
-Copyright 2025 Mirage.jl authors
+Copyright © 2025-2026 United States Government as represented by the
+Administrator of the National Aeronautics and Space Administration.
+All Rights Reserved.
 
 This product is licensed under the Apache License, Version 2.0 (see the LICENSE
 file for the full text).
 
 Mirage.jl was developed in support of the SHERPA mission-planning tool at the
-NASA Ames Research Center. Portions of this work may have been authored by
-United States Government employees in the course of their official duties;
-under 17 U.S.C. Section 105, such works are not subject to copyright protection
-in the United States. Contributions by non-federal authors (contractors,
-universities, and other outside contributors) remain subject to copyright and
-are licensed under the terms of the LICENSE file.
+NASA Ames Research Center.
 
 -------------------------------------------------------------------------------
 Third-party assets:
