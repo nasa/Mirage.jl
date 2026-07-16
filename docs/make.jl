@@ -3,7 +3,10 @@ using Documenter, Mirage
 makedocs(
     sitename = "Mirage.jl Documentation",
     modules = [Mirage],
-    format = Documenter.HTML(repolink = "https://github.com/groverburger/Mirage.jl"),
+    format = Documenter.HTML(
+        repolink = "https://github.com/nasa/Mirage.jl",
+        edit_link = "master",
+    ),
     pages = [
         "Home" => "index.md",
         "Getting Started" => "getting_started.md",
@@ -12,6 +15,5 @@ makedocs(
         "Examples" => "examples.md"
     ],
     checkdocs = :all,
-    warnonly = [:missing_docs],  # Only warn, don't fail
     remotes = nothing
 )

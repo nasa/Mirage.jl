@@ -271,8 +271,8 @@ end
     request_frame!(app, frames = 1)
 
 Request that `app` render at least `frames` more frames. Wakes an event-driven
-(`animate = false`) loop immediately, so background tasks can trigger a repaint
-when data changes.
+event-driven loop immediately, so timers and background tasks can trigger a repaint
+when data changes. GLFW input events already wake the loop automatically.
 """
 function request_frame!(app::MirageApp, frames::Integer = 1)
     app.requested_frames = max(app.requested_frames, Int(frames))
@@ -656,13 +656,14 @@ and frames are skipped until the code is fixed — with Revise loaded (see
 [`run_live!`](@ref)) you can edit the broken function and the app recovers in place.
 
 # Keyword arguments
-- `animate`: `true` (default) renders continuously like a game loop. `false`
-  renders only in response to input events — battery-friendly for tools that are
-  idle most of the time ([`request_frame!`](@ref) and [`stop!`](@ref) wake the
-  loop from other tasks). Pass a function `app -> Bool` to decide per frame, e.g.
-  animate only while a simulation is playing.
-- `idle_timeout`: when not animating, maximum seconds to block waiting for events
-  before rendering an idle frame anyway (default `0.1`).
+- `animate`: `false` (default) waits for input and renders low-rate maintenance
+  frames while idle. Set it to `true` for continuous animation. Pass a function
+  `app -> Bool` to decide per frame, e.g. animate only while a simulation is
+  playing. Timers and background tasks should call [`request_frame!`](@ref) after
+  changing visible state.
+- `idle_timeout`: in event-driven mode, maximum seconds to wait before a
+  maintenance frame (default `0.1`). These frames keep Julia tasks and live reload
+  responsive without rendering continuously.
 - `before_frame!`: callback run at the start of each frame (default no-op).
 - `menu_bar`: give the dockspace host window a menu bar.
 - `cleanup!`: callback run once as the loop exits.
@@ -670,7 +671,7 @@ and frames are skipped until the code is fixed — with Revise loaded (see
 function run!(
     frame!::Function,
     app::MirageApp;
-    animate::Union{Bool, Function} = true,
+    animate::Union{Bool, Function} = false,
     before_frame!::Function = app -> nothing,
     idle_timeout::Real = 0.1,
     menu_bar::Bool = false,
@@ -714,9 +715,10 @@ running. This powers the REPL workflow: start the app, use it, edit a function, 
 the change without restarting.
 
 Requires `Revise` to be loaded in the session **and** your code to be tracked by
-it — load files with `Revise.includet`, register them with
-`Revise.track(MyModule, "file.jl")`, or put your code in a package. Without Revise
-a warning is logged and the app runs without reloading.
+it. Julia packages loaded with `using` or `import` after Revise are tracked
+automatically. For a loose script, load it once with `Revise.includet` or register
+it with `Revise.track`. Without Revise a warning is logged and the app runs without
+reloading.
 """
 function run_live!(
     frame!::Function,
@@ -726,8 +728,8 @@ function run_live!(
 )
     if _live_revise_hook[] === nothing
         @warn """run_live! without Revise: live code reloading is disabled.
-                 Run `using Revise` before starting the app, and make sure your code is
-                 tracked (`Revise.includet`, `Revise.track`, or a package).""" maxlog = 1
+                 Run `using Revise` before loading your app package. For a loose script,
+                 use `Revise.includet` or `Revise.track`.""" maxlog = 1
     end
     return run!(frame!, app; before_frame!, kwargs...)
 end

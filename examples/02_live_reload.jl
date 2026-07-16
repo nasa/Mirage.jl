@@ -7,8 +7,11 @@
 # REPL mode:
 #
 #   julia> using Revise
-#   julia> includet("examples/02_live_reload.jl")   # includet = Revise-tracked include
+#   julia> includet("examples/02_live_reload.jl")   # for this loose script
 #   julia> LiveReload.main()
+#
+# Normal Julia packages loaded after Revise are tracked automatically and do not
+# use includet.
 #
 # Either way: edit `scene!` below, save, and the running window updates in place —
 # your window position, and any app state, are preserved across the reload.
@@ -48,7 +51,7 @@ function main()
     app = MirageApp("Mirage: Live Reload (edit scene!)"; width = 900, height = 600)
     start = time()
     laid_out = Ref(false)
-    run_live!(app) do a
+    run_live!(app; animate = true) do a
         if !laid_out[]
             dock_layout!(a; center = "Scene", top = "Live reload", top_size = 0.15)
             laid_out[] = true

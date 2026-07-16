@@ -1,7 +1,7 @@
 # Mirage.jl
 
 [![built with Julia](https://img.shields.io/badge/built%20with-Julia-9558B2.svg?logo=julia&logoColor=white)](https://julialang.org)
-[![CI](https://github.com/groverburger/Mirage.jl/actions/workflows/CI.yml/badge.svg)](https://github.com/groverburger/Mirage.jl/actions/workflows/CI.yml)
+[![CI](https://github.com/nasa/Mirage.jl/actions/workflows/CI.yml/badge.svg)](https://github.com/nasa/Mirage.jl/actions/workflows/CI.yml)
 
 Mirage.jl is a hardware-accelerated 2D and 3D graphics library for Julia with an
 HTML5 Canvas–style API, plus a batteries-included layer for building **standalone
@@ -31,84 +31,29 @@ as VIPER.
   logged and skipped so you can fix them live.
 - **OpenGL backend:** high-performance rendering powered by ModernGL.jl.
 
-## Why Mirage?
-
-Mirage is for interactive desktop tools centered on custom GPU rendering.
-
-| Need | Use |
-|---|---|
-| Custom 2D/3D desktop tool | Mirage |
-| Scientific plots | [Makie](https://makie.org) |
-| Low-level immediate-mode UI | [CImGui.jl](https://github.com/Gnimuc/CImGui.jl) |
-| Conventional forms | [Gtk4.jl](https://github.com/JuliaGtk/Gtk4.jl) or [QML.jl](https://github.com/JuliaGraphics/QML.jl) |
-| Browser deployment | [Genie.jl](https://github.com/GenieFramework/Genie.jl) or [Dash.jl](https://github.com/plotly/Dash.jl) |
-| Static vector graphics | [Luxor.jl](https://github.com/JuliaGraphics/Luxor.jl) |
-
 ## Installation
 
 Until Mirage is registered, install it from GitHub:
 
 ```julia
 import Pkg
-Pkg.add(url = "https://github.com/groverburger/Mirage.jl")
+Pkg.add(url = "https://github.com/nasa/Mirage.jl")
 ```
 
 Requires Julia 1.11+. To run the examples:
 
 ```sh
-git clone https://github.com/groverburger/Mirage.jl
+git clone https://github.com/nasa/Mirage.jl
 cd Mirage.jl
+julia --project=examples -e 'using Pkg; Pkg.instantiate()'
 julia --project=examples examples/01_minimal_app.jl
 ```
 
-## Quick start
+## Usage
 
-Start with [`examples/01_minimal_app.jl`](examples/01_minimal_app.jl). The
-[`examples/`](examples/) folder also covers live reload, mouse input, and 3D.
-
-## How the API is organized
-
-`using Mirage` exports the application layer:
-`MirageApp`, `run!`, `run_live!`, `stop!`, `draw_canvas!`, `draw_background_canvas!`,
-`dock_layout!`, `CanvasViewport`, and input callbacks.
-
-Use the drawing API with the `Mirage.` prefix:
-
-- Shapes & styles: `Mirage.fillrect`, `Mirage.fillcircle`, `Mirage.rect`,
-  `Mirage.circle`, `Mirage.fillcolor`, `Mirage.strokecolor`, `Mirage.strokewidth`,
-  `Mirage.rgba`
-- Paths: `Mirage.beginpath`, `Mirage.moveto`, `Mirage.lineto`, `Mirage.closepath`,
-  `Mirage.fill`, `Mirage.stroke`
-- Transforms: `Mirage.save`, `Mirage.restore`, `Mirage.translate`, `Mirage.rotate`,
-  `Mirage.scale`
-- Text & images: `Mirage.text`, `Mirage.drawimage`, `Mirage.load_texture`
-- 3D: `Mirage.create_mesh`, `Mirage.draw_mesh`, `Mirage.load_obj_mesh`,
-  `Mirage.create_cube`, `Mirage.create_uv_sphere`,
-  `Mirage.update_perspective_projection_matrix`, `Mirage.lookat`
-- Custom shaders: `Mirage.create_shader_program`, `Mirage.initialize_shader_uniform!`,
-  `Mirage.set_uniform`, `Mirage.VertexAttribute`
-
-For custom GLFW/OpenGL hosts, use `Mirage.initialize_render_context()` and
-`Mirage.cleanup_render_context()` instead of `MirageApp`.
-
-## Building a desktop GUI application
-
-Build the UI with CImGui and render into either layout:
-
-| Pattern | How | Good for |
-|---|---|---|
-| Docked panes | `dock_layout!` + `draw_canvas!` | Canvas with panels |
-| Background canvas | `draw_background_canvas!` | Canvas with overlays |
-
-### Continuous vs. event-driven rendering
-
-`run!` renders continuously by default. Pass `animate = false` for event-driven
-rendering and call `request_frame!(app)` when background work needs a repaint.
-
-### The REPL live-reload workflow
-
-Load code with Revise's `includet`, then use `run_live!`. Saved changes appear in
-the running app; frame errors are logged so the app can recover after the next edit.
+The five canonical [`examples/`](examples/) cover the app lifecycle, live reload,
+an interactive orbital simulation, comprehensive 3D rendering, and a compact 2D
+gallery. See the [`docs/`](docs/) for the complete API.
 
 ## Limitations & platform notes
 
@@ -126,13 +71,22 @@ pkg> test
 
 Interactive tests:
 
-```julia
+```sh
 MIRAGE_TEST_INTERACTIVE=1 julia --project -e 'using Pkg; Pkg.test()'
 ```
 
+Run only selected examples by their names:
+
+```sh
+MIRAGE_TEST_INTERACTIVE=1 MIRAGE_TEST_EXAMPLES=orbital_dynamics,rendering_gallery_2d \
+  julia --project -e 'using Pkg; Pkg.test()'
+```
+
+Interactive windows are never opened by a normal `Pkg.test()` run.
+
 ## Contributing
 
-Open an issue or pull request on [GitHub](https://github.com/groverburger/Mirage.jl).
+Open an issue or pull request on [GitHub](https://github.com/nasa/Mirage.jl).
 
 ## License
 

@@ -1,53 +1,45 @@
 # Mirage.jl examples
 
-Minimal, self-contained desktop apps that exercise the `MirageApp` API. They double
-as a place to *feel* the API before building a real app.
+Five self-contained desktop applications are the canonical graphical smoke suite.
+Each file defines a uniquely named module with a callable `main()` and also runs
+directly as a script.
 
-## Running
-
-Each example is a standalone script. From the repository root:
-
-```sh
-julia --project=examples -e 'using Pkg; Pkg.instantiate()'
-julia --project=examples examples/01_minimal_app.jl
-```
-
-The environment uses the in-repo Mirage via a path dependency. Close the app window
-to exit.
-
-If Mirage's dependencies have changed since the environment was last instantiated,
-refresh the local manifest before running an example:
+From the repository root:
 
 ```sh
 julia --project=examples -e 'using Pkg; Pkg.resolve(); Pkg.instantiate()'
+julia --project=examples examples/01_minimal_app.jl
 ```
-
-## The live-reload workflow
-
-`02_live_reload.jl` demonstrates the hot-reload loop. It works in script mode
-directly (the file registers itself with Revise):
-
-```sh
-julia --project=examples examples/02_live_reload.jl
-# now edit the `scene!` function in the file, save, and watch the running window update
-```
-
-or from the REPL:
-
-```julia
-using Revise
-includet("examples/02_live_reload.jl")   # `includet` = Revise-tracked include
-LiveReload.main()
-```
-
-Live reload requires Revise to be *tracking* the file — a plain `include` won't
-reload, and `run_live!` warns if Revise isn't loaded at all.
-
-## The examples
 
 | File | What it shows |
 |------|---------------|
-| `01_minimal_app.jl`   | Smallest useful app: an ImGui control panel driving a 2D canvas. |
-| `02_live_reload.jl`   | `run_live!` + Revise hot-reload of your draw code. |
-| `03_paint_2d.jl`      | Mouse input via `CanvasViewport`; accumulating drawing state. |
-| `04_mesh_viewer_3d.jl`| 3D mesh rendering in a canvas with drag-to-orbit and scroll-to-zoom. |
+| [`01_minimal_app.jl`](01_minimal_app.jl) | The smallest animated Mirage/CImGui app. |
+| [`02_live_reload.jl`](02_live_reload.jl) | Revise tracking and `run_live!` without losing app state. |
+| [`03_orbital_dynamics.jl`](03_orbital_dynamics.jl) | Four-body position-Verlet simulation, camera navigation, dragging/throwing, inspection, and numerical diagnostics. |
+| [`04_scene_viewer_3d.jl`](04_scene_viewer_3d.jl) | Meshes, OBJ loading, textures, Phong shading, orbit camera, 3D paths, and scene text. |
+| [`05_rendering_gallery_2d.jl`](05_rendering_gallery_2d.jl) | Primitives, paths, transforms, text, loaded images, and an offscreen canvas. |
+
+The orbital app conditionally animates only while its simulation is running. A
+normal package test loads every module headlessly; graphical smoke runs are
+explicitly opt-in:
+
+```sh
+MIRAGE_TEST_INTERACTIVE=1 julia --project -e 'using Pkg; Pkg.test()'
+MIRAGE_TEST_INTERACTIVE=1 MIRAGE_TEST_EXAMPLES=scene_viewer_3d,rendering_gallery_2d \
+  julia --project -e 'using Pkg; Pkg.test()'
+```
+
+Valid selection names are `minimal_app`, `live_reload`, `orbital_dynamics`,
+`scene_viewer_3d`, and `rendering_gallery_2d`.
+
+## Live reload
+
+Run `02_live_reload.jl` directly, or load it as a tracked loose script from a REPL:
+
+```julia
+using Revise
+includet("examples/02_live_reload.jl")
+LiveReload.main()
+```
+
+Edit `scene!`, save, and the existing window updates in place.

@@ -8,6 +8,8 @@
 #   - The drawing API is used qualified — `Mirage.fillrect(...)`, `Mirage.save()` —
 #     just like the HTML5 canvas is always accessed through `ctx.fillRect(...)`.
 
+module MinimalApp
+
 using Mirage
 using CImGui
 
@@ -19,9 +21,9 @@ function main()
     speed = Ref(1.0f0)
     laid_out = Ref(false)
 
-    # run! renders continuously by default (animate = true), so the square keeps
-    # spinning. Pass animate = false for event-driven repainting (see 03_paint_2d.jl).
-    run!(app) do a
+    # Event-driven rendering is the default. This scene animates continuously, so
+    # it opts in explicitly with animate = true.
+    run!(app; animate = true) do a
         # Dock the canvas to fill the center with the controls on the left (runs once;
         # windows stay user-dockable afterward).
         if !laid_out[]
@@ -52,6 +54,8 @@ function main()
     end
 end
 
+end # module MinimalApp
+
 if abspath(PROGRAM_FILE) == @__FILE__
-    main()
+    MinimalApp.main()
 end
