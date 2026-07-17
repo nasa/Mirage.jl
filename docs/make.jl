@@ -19,6 +19,6 @@ makedocs(
 )
 
 deploydocs(
-    repo = "github.com/groverburger/Mirage.jl.git",
+    repo = "github.com/nasa/Mirage.jl.git",
     devbranch = "master",
 )

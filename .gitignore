@@ -6,6 +6,9 @@
 # Documentation build output
 /docs/build/
 
+# README image is hosted on GitHub
+/sherpa_screenshot.png
+
 # Dear ImGui persisted layout state
 *imgui.ini
 

@@ -2,7 +2,7 @@
 
 [![built with Julia](https://img.shields.io/badge/built%20with-Julia-9558B2.svg?logo=julia&logoColor=white)](https://julialang.org)
 [![CI](https://github.com/nasa/Mirage.jl/actions/workflows/CI.yml/badge.svg)](https://github.com/nasa/Mirage.jl/actions/workflows/CI.yml)
-[![Documentation](https://img.shields.io/badge/docs-dev-blue.svg)](https://groverburger.github.io/Mirage.jl/dev/)
+[![Documentation](https://img.shields.io/badge/docs-dev-blue.svg)](https://nasa.github.io/Mirage.jl/dev/)
 
 Mirage.jl is a multiplatform, integrated, OpenGL-powered framework for building **interactive
 desktop applications** in Julia, especially GUIs for simulations and scientific
