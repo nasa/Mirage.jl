@@ -1,6 +1,6 @@
 # Mirage.jl examples
 
-Five self-contained desktop applications are the canonical graphical smoke suite.
+Five self-contained desktop applications form the canonical graphical example suite.
 Each file defines a uniquely named module with a callable `main()` and also runs
 directly as a script.
 
@@ -20,7 +20,7 @@ julia --project=examples examples/01_minimal_app.jl
 | [`05_rendering_gallery_2d.jl`](05_rendering_gallery_2d.jl) | Primitives, paths, transforms, text, loaded images, and an offscreen canvas. |
 
 The orbital app conditionally animates only while its simulation is running. A
-normal package test loads every module headlessly; graphical smoke runs are
+normal package test loads every module headlessly; interactive example runs are
 explicitly opt-in:
 
 ```sh

@@ -17,7 +17,7 @@ julia --project=examples examples/01_minimal_app.jl
 
 Each file defines a module with `main()` and also runs as a script.
 
-Interactive smoke tests are opt-in:
+Interactive example runs are opt-in:
 
 ```sh
 MIRAGE_TEST_INTERACTIVE=1 julia --project -e 'using Pkg; Pkg.test()'
