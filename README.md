@@ -19,6 +19,10 @@ Mirage.jl is used in production in **SHERPA**, a lunar rover strategic
 mission-planning tool at the NASA Ames Research Center, used in projects such
 as VIPER.
 
+<p align="center">
+  <img width="1464" height="885" alt="SHERPA lunar rover mission-planning GUI built with Mirage.jl" src="https://github.com/user-attachments/assets/61666423-a3c9-4c6e-8be8-9927da380225" />
+</p>
+
 ## Features
 
 - **2D canvas API** — shapes, images, paths, text, and transforms.
