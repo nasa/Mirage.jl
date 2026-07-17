@@ -17,3 +17,8 @@ makedocs(
     checkdocs = :all,
     remotes = nothing
 )
+
+deploydocs(
+    repo = "github.com/groverburger/Mirage.jl.git",
+    devbranch = "master",
+)

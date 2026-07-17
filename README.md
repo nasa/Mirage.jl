@@ -2,8 +2,9 @@
 
 [![built with Julia](https://img.shields.io/badge/built%20with-Julia-9558B2.svg?logo=julia&logoColor=white)](https://julialang.org)
 [![CI](https://github.com/nasa/Mirage.jl/actions/workflows/CI.yml/badge.svg)](https://github.com/nasa/Mirage.jl/actions/workflows/CI.yml)
+[![Documentation](https://img.shields.io/badge/docs-dev-blue.svg)](https://groverburger.github.io/Mirage.jl/dev/)
 
-Mirage.jl is an integrated, OpenGL-powered framework for building **interactive
+Mirage.jl is a multiplatform, integrated, OpenGL-powered framework for building **interactive
 desktop applications** in Julia, especially GUIs for simulations and scientific
 software. Its HTML5 Canvas–style 2D and 3D drawing API, [Dear
 ImGui](https://github.com/ocornut/imgui) interface (via
@@ -11,16 +12,17 @@ ImGui](https://github.com/ocornut/imgui) interface (via
 work together as one system.
 
 Draw with calls like `Mirage.fillrect` and `Mirage.drawimage`, arrange canvases
-inside dockable GUI windows, and handle interaction without managing shaders,
-vertex buffers, or window plumbing. Run the application from the Julia REPL,
-edit it live, and keep its state while the interface updates.
+inside dockable GUI windows. You don't have to worry about managing shaders,
+vertex buffers, or window plumbing unless you want to.
+
+**Works natively with Revise.** Run the application from the Julia REPL,
+edit it live, and watch it keep its state while the interface updates in real time.
 
 Mirage.jl is used in production in **SHERPA**, a lunar rover strategic
 mission-planning tool at the NASA Ames Research Center, used in projects such
-as VIPER.
-
+as VIPER:
 <p align="center">
-  <img width="1464" height="885" alt="SHERPA lunar rover mission-planning GUI built with Mirage.jl" src="https://github.com/user-attachments/assets/61666423-a3c9-4c6e-8be8-9927da380225" />
+  <img width="900" alt="SHERPA lunar rover mission-planning GUI built with Mirage.jl" src="https://github.com/user-attachments/assets/61666423-a3c9-4c6e-8be8-9927da380225" />
 </p>
 
 ## Features
@@ -58,14 +60,6 @@ julia --project=examples examples/01_minimal_app.jl
 The five canonical [`examples/`](examples/) cover the app lifecycle, live reload,
 an interactive orbital simulation, comprehensive 3D rendering, and a compact 2D
 gallery. See the [`docs/`](docs/) for the complete API.
-
-## Limitations & platform notes
-
-- Run the window and render loop on Julia's main thread.
-- Run one `MirageApp` at a time per process.
-- macOS is production-tested; Linux runs in CI; Windows is untested.
-- Julia 1.11+ is required.
-- The first window in a session incurs JIT latency.
 
 ## Testing
 
