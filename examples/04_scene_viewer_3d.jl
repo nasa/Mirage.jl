@@ -92,19 +92,62 @@ function draw_ground_grid()
         Mirage.moveto(-5, coordinate, -1.5)
         Mirage.lineto(5, coordinate, -1.5)
     end
-    Mirage.strokewidth(1)
+    Mirage.strokewidth(0.015)
     Mirage.strokecolor(Mirage.rgba(75, 90, 120, 150))
     Mirage.stroke()
 
-    Mirage.beginpath()
-    Mirage.moveto(-4.4, -2.8, -1.35)
-    Mirage.lineto(-2.0, -1.7, -0.7)
-    Mirage.lineto(0.0, -2.4, -0.2)
-    Mirage.lineto(2.0, -1.2, 0.25)
-    Mirage.lineto(4.0, -2.0, 0.9)
-    Mirage.strokewidth(5)
-    Mirage.strokecolor(Mirage.rgba(255, 195, 75))
+    trajectory = [
+        (-4.5, -2.6, -1.32),
+        (-3.8, -2.35, -1.18),
+        (-3.0, -2.12, -0.92),
+        (-2.2, -2.0, -0.62),
+        (-1.4, -2.08, -0.30),
+        (-0.5, -2.22, -0.05),
+        (0.4, -2.18, 0.12),
+        (1.3, -1.95, 0.28),
+        (2.2, -1.55, 0.48),
+        (3.0, -1.0, 0.70),
+        (3.7, -0.3, 0.90),
+    ]
+
+    function trace_trajectory()
+        Mirage.beginpath()
+        Mirage.moveto(first(trajectory)...)
+        for point in Iterators.drop(trajectory, 1)
+            Mirage.lineto(point...)
+        end
+    end
+
+    # A soft outer stroke and crisp center make the path readable against both
+    # the grid and textured meshes. Stroke widths are measured in world units.
+    trace_trajectory()
+    Mirage.strokewidth(0.11)
+    Mirage.strokecolor(Mirage.rgba(210, 95, 30, 120))
     Mirage.stroke()
+
+    Mirage.save()
+    Mirage.translate(0, 0, 0.012)
+    trace_trajectory()
+    Mirage.strokewidth(0.045)
+    Mirage.strokecolor(Mirage.rgba(255, 205, 80))
+    Mirage.stroke()
+    Mirage.restore()
+end
+
+function pan_camera_target(target, yaw, pitch, distance, mouse_delta, viewport_height)
+    cos_pitch = cos(pitch)
+    sin_pitch = sin(pitch)
+    cos_yaw = cos(yaw)
+    sin_yaw = sin(yaw)
+    right = (-sin_yaw, cos_yaw, 0.0)
+    camera_up = (-sin_pitch * cos_yaw, -sin_pitch * sin_yaw, cos_pitch)
+    world_per_pixel = 2 * distance * tan(pi / 8) / max(viewport_height, 1)
+    dx, dy = mouse_delta
+    return (
+        target[1] - dx * world_per_pixel * right[1] + dy * world_per_pixel * camera_up[1],
+        target[2] - dx * world_per_pixel * right[2] + dy * world_per_pixel * camera_up[2],
+        target[3] - dx * world_per_pixel * right[3] + dy * world_per_pixel * camera_up[3],
+    )
 end
 
 function main()
@@ -118,7 +161,9 @@ function main()
     yaw = Ref(0.72)
     pitch = Ref(0.42)
     distance = Ref(10.0f0)
+    target = Ref((0.0, 0.0, 0.0))
     last_mouse = Ref((0.0, 0.0))
+    panning = Ref(false)
     auto_rotate = Ref(true)
     show_grid = Ref(true)
     start_time = time()
@@ -156,7 +201,7 @@ function main()
                 if viewport.clicked
                     last_mouse[] = viewport.mouse_rel
                 end
-                if viewport.active
+                if viewport.active && !panning[]
                     dx = viewport.mouse_rel[1] - last_mouse[][1]
                     dy = viewport.mouse_rel[2] - last_mouse[][2]
                     yaw[] -= dx * 0.01
@@ -164,11 +209,27 @@ function main()
                     last_mouse[] = viewport.mouse_rel
                 end
 
+                if viewport.hovered && CImGui.IsMouseClicked(1)
+                    panning[] = true
+                    last_mouse[] = viewport.mouse_rel
+                end
+                if panning[] && CImGui.IsMouseDown(1)
+                    dx = viewport.mouse_rel[1] - last_mouse[][1]
+                    dy = viewport.mouse_rel[2] - last_mouse[][2]
+                    target[] = pan_camera_target(
+                        target[], yaw[], pitch[], distance[], (dx, dy), canvas.height,
+                    )
+                    last_mouse[] = viewport.mouse_rel
+                elseif panning[]
+                    panning[] = false
+                end
+
                 r = distance[]
+                look_at = target[]
                 camera = Float32[
-                    r * cos(pitch[]) * cos(yaw[]),
-                    r * cos(pitch[]) * sin(yaw[]),
-                    r * sin(pitch[]),
+                    look_at[1] + r * cos(pitch[]) * cos(yaw[]),
+                    look_at[2] + r * cos(pitch[]) * sin(yaw[]),
+                    look_at[3] + r * sin(pitch[]),
                 ]
                 t = time() - start_time
                 animation_t = auto_rotate[] ? t : 0.0
@@ -179,7 +240,7 @@ function main()
                     canvas.width, canvas.height, 1.0;
                     near = 0.01, far = 100.0, fov = pi / 4,
                 )
-                Mirage.lookat(camera, Float32[0, 0, 0], Float32[0, 0, 1])
+                Mirage.lookat(camera, Float32[look_at...], Float32[0, 0, 1])
 
                 show_grid[] && draw_ground_grid()
 
@@ -229,7 +290,7 @@ function main()
             CImGui.SetNextWindowPos(CImGui.ImVec2(20, 20), CImGui.ImGuiCond_FirstUseEver)
             CImGui.SetNextWindowSize(CImGui.ImVec2(360, 150), CImGui.ImGuiCond_FirstUseEver)
             CImGui.Begin("Scene controls")
-            CImGui.Text("Drag to orbit; scroll to zoom.")
+            CImGui.Text("Left: orbit | Right: pan | Scroll: zoom")
             CImGui.Checkbox("animate objects", auto_rotate)
             CImGui.Checkbox("grid and 3D path", show_grid)
             CImGui.Text("camera distance: $(round(distance[]; digits = 1))")

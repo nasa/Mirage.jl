@@ -3,15 +3,17 @@
 [![built with Julia](https://img.shields.io/badge/built%20with-Julia-9558B2.svg?logo=julia&logoColor=white)](https://julialang.org)
 [![CI](https://github.com/nasa/Mirage.jl/actions/workflows/CI.yml/badge.svg)](https://github.com/nasa/Mirage.jl/actions/workflows/CI.yml)
 
-Mirage.jl is a hardware-accelerated 2D and 3D graphics library for Julia with an
-HTML5 Canvas–style API, plus a batteries-included layer for building **standalone
-desktop GUI applications** on top of [Dear ImGui](https://github.com/ocornut/imgui)
-(via [CImGui.jl](https://github.com/Gnimuc/CImGui.jl)) and GLFW.
+Mirage.jl is an integrated, OpenGL-powered framework for building **interactive
+desktop applications** in Julia, especially GUIs for simulations and scientific
+software. Its HTML5 Canvas–style 2D and 3D drawing API, [Dear
+ImGui](https://github.com/ocornut/imgui) interface (via
+[CImGui.jl](https://github.com/Gnimuc/CImGui.jl)), and GLFW application runtime
+work together as one system.
 
-You write draw calls like `Mirage.fillrect` and `Mirage.drawimage` instead of
-managing shaders and vertex buffers, drop your rendered canvases straight into
-ImGui windows, and iterate on the whole application live from the Julia REPL.
-Start the app, use it, edit a function, and see the change without losing your state!
+Draw with calls like `Mirage.fillrect` and `Mirage.drawimage`, arrange canvases
+inside dockable GUI windows, and handle interaction without managing shaders,
+vertex buffers, or window plumbing. Run the application from the Julia REPL,
+edit it live, and keep its state while the interface updates.
 
 Mirage.jl is used in production in **SHERPA**, a lunar rover strategic
 mission-planning tool at the NASA Ames Research Center, used in projects such
@@ -19,17 +21,15 @@ as VIPER.
 
 ## Features
 
-- **HTML5 Canvas–style 2D API:** `Mirage.fillrect`, `Mirage.fillcircle`,
-  `Mirage.drawimage`, paths, `Mirage.text`, and a save/restore transform stack.
-- **3D rendering:** meshes, perspective/lookat cameras, OBJ loading, custom
-  shaders. The same minimal, immediate-mode philosophy.
-- **Desktop GUI application layer:** `MirageApp` wires OpenGL + Dear ImGui + GLFW
-  together, with docking, canvases-in-windows, input callbacks, a bundled
-  DPI-scaled UI font (Roboto), and programmatic dock layouts.
-- **REPL live-reload workflow:** `run_live!` hot-reloads your code while the app
-  runs (via a `Revise` package extension), and errors in your frame code are
-  logged and skipped so you can fix them live.
-- **OpenGL backend:** high-performance rendering powered by ModernGL.jl.
+- **2D canvas API** — shapes, images, paths, text, and transforms.
+- **3D rendering** — meshes, cameras, OBJ models, and custom shaders.
+- **GPU acceleration** — powered by ModernGL.jl.
+- **Desktop apps** — OpenGL, Dear ImGui, and GLFW through `MirageApp`.
+- **Docking** — canvas windows and programmatic layouts.
+- **Input** — mouse, keyboard, and window callbacks.
+- **High-DPI UI** — automatic scaling and bundled Roboto.
+- **Live reload** — edit running apps with `run_live!` and Revise.
+- **Recoverable errors** — fix frame code without restarting the app.
 
 ## Installation
 
