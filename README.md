@@ -22,20 +22,20 @@ Mirage.jl is used in production in **SHERPA**, a lunar rover strategic
 mission-planning tool at the NASA Ames Research Center, used in projects such
 as VIPER:
 <p align="center">
-  <img width="900" alt="SHERPA lunar rover mission-planning GUI built with Mirage.jl" src="https://github.com/user-attachments/assets/61666423-a3c9-4c6e-8be8-9927da380225" />
+  <img width="900" alt="SHERPA lunar rover mission-planning GUI built with Mirage.jl" src="https://github-production-user-asset-6210df.s3.amazonaws.com/19754251/623100447-61666423-a3c9-4c6e-8be8-9927da380225.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAVCODYLSA53PQK4ZA%2F20260721%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260721T064823Z&X-Amz-Expires=300&X-Amz-Signature=65b8763674b47c27ef3f9d4fa732ffa4c29e73e8e137ff17f7152c9b5f077242&X-Amz-SignedHeaders=host&response-content-type=image%2Fpng" />
 </p>
 
 ## Features
 
-- **2D canvas API** — shapes, images, paths, text, and transforms.
-- **3D rendering** — meshes, cameras, OBJ models, and custom shaders.
-- **GPU acceleration** — powered by ModernGL.jl.
-- **Desktop apps** — OpenGL, Dear ImGui, and GLFW through `MirageApp`.
-- **Docking** — canvas windows and programmatic layouts.
-- **Input** — mouse, keyboard, and window callbacks.
-- **High-DPI UI** — automatic scaling and bundled Roboto.
-- **Live reload** — edit running apps with `run_live!` and Revise.
-- **Recoverable errors** — fix frame code without restarting the app.
+- **2D canvas API**: shapes, images, paths, text, and transforms.
+- **3D rendering**: meshes, cameras, OBJ models, and custom shaders.
+- **GPU acceleration**: powered by ModernGL.jl.
+- **Desktop apps**: OpenGL, Dear ImGui, and GLFW through `MirageApp`.
+- **Docking**: canvas windows and programmatic layouts.
+- **Input**: mouse, keyboard, and window callbacks.
+- **High-DPI UI**: automatic scaling and bundled Roboto.
+- **Live reload**: edit running apps with `run_live!` and Revise.
+- **Recoverable errors**: fix frame code without restarting the app.
 
 ## Installation
 
@@ -79,12 +79,6 @@ Run only selected examples by their names:
 MIRAGE_TEST_INTERACTIVE=1 MIRAGE_TEST_EXAMPLES=orbital_dynamics,rendering_gallery_2d \
   julia --project -e 'using Pkg; Pkg.test()'
 ```
-
-Interactive windows are never opened by a normal `Pkg.test()` run.
-
-## Contributing
-
-Open an issue or pull request on [GitHub](https://github.com/nasa/Mirage.jl).
 
 ## License
 
