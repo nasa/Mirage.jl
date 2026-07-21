@@ -39,11 +39,10 @@ as VIPER:
 
 ## Installation
 
-Until Mirage is registered, install it from GitHub:
+Add Mirage.jl via the Julia's package manager, Pkg.jl:
 
 ```julia
-import Pkg
-Pkg.add(url = "https://github.com/nasa/Mirage.jl")
+pkg> add Mirage
 ```
 
 Requires Julia 1.11+. To run the examples:
