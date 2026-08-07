@@ -22,7 +22,7 @@ Mirage.jl is used in production in **SHERPA**, a lunar rover strategic
 mission-planning tool at the NASA Ames Research Center, used in projects such
 as VIPER:
 <p align="center">
-  <img width="900" alt="SHERPA lunar rover mission-planning GUI built with Mirage.jl" src="https://github-production-user-asset-6210df.s3.amazonaws.com/19754251/623100447-61666423-a3c9-4c6e-8be8-9927da380225.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAVCODYLSA53PQK4ZA%2F20260721%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260721T064823Z&X-Amz-Expires=300&X-Amz-Signature=65b8763674b47c27ef3f9d4fa732ffa4c29e73e8e137ff17f7152c9b5f077242&X-Amz-SignedHeaders=host&response-content-type=image%2Fpng" />
+  <img width="900" alt="SHERPA lunar rover mission-planning GUI built with Mirage.jl" src="https://raw.githubusercontent.com/nasa/Mirage.jl/refs/heads/master/docs/src/sherpa_screenshot.png" />
 </p>
 
 ## Features
