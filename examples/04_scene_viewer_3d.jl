@@ -69,6 +69,24 @@ function initialize_phong_shader()
     return shader
 end
 
+function create_checkerboard_texture(size::Int = 64, tile_count::Int = 8)::Mirage.GLuint
+    size > 0 || throw(ArgumentError("checkerboard size must be positive"))
+    tile_count > 0 || throw(ArgumentError("checkerboard tile count must be positive"))
+
+    light::Mirage.RGBA{Mirage.N0f8} = Mirage.RGBA{Mirage.N0f8}(0.92, 0.78, 0.36, 1.0)
+    dark::Mirage.RGBA{Mirage.N0f8} = Mirage.RGBA{Mirage.N0f8}(0.10, 0.20, 0.42, 1.0)
+    pixels::Matrix{Mirage.RGBA{Mirage.N0f8}} = Matrix{Mirage.RGBA{Mirage.N0f8}}(undef, size, size)
+    tile_size::Int = cld(size, tile_count)
+
+    for row::Int in 1:size, column::Int in 1:size
+        tile_row::Int = (row - 1) ÷ tile_size
+        tile_column::Int = (column - 1) ÷ tile_size
+        pixels[row, column] = iseven(tile_row + tile_column) ? light : dark
+    end
+
+    return Mirage.load_texture(pixels)
+end
+
 function draw_phong(mesh, shader, texture, camera, light, tint)
     Mirage.draw_mesh(mesh, shader, active_shader -> begin
         Mirage.set_uniform(active_shader, "model", Mirage.get_state().transform)
@@ -173,7 +191,7 @@ function main()
         cube = Mirage.create_cube(2.0)
         sphere = Mirage.create_uv_sphere(1.1, 36, 20)
         obj = Mirage.load_obj_mesh(joinpath(ASSET_DIR, "cube.obj"))
-        texture = Mirage.load_texture(joinpath(ASSET_DIR, "testimage.jpg"))
+        texture = create_checkerboard_texture()
         shader = initialize_phong_shader()
 
         # The app retains callback objects for their full GLFW lifetime; destroying
@@ -244,7 +262,7 @@ function main()
 
                 show_grid[] && draw_ground_grid()
 
-                # Procedural cube, custom Phong lighting, and a loaded texture.
+                # Procedural cube, custom Phong lighting, and a checkerboard texture.
                 Mirage.save()
                 Mirage.translate(-2.3, 0.2, 0.0)
                 Mirage.rotate(animation_t * 0.45, animation_t * 0.65, animation_t * 0.2)
@@ -294,7 +312,7 @@ function main()
             CImGui.Checkbox("animate objects", auto_rotate)
             CImGui.Checkbox("grid and 3D path", show_grid)
             CImGui.Text("camera distance: $(round(distance[]; digits = 1))")
-            CImGui.Text("procedural cube + sphere, OBJ, texture, Phong")
+            CImGui.Text("procedural cube + sphere, OBJ, checkerboard, Phong")
             CImGui.End()
         end
     catch

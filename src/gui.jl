@@ -463,9 +463,11 @@ function draw_background_canvas!(
     CImGui.PushStyleVar(CImGui.ImGuiStyleVar_WindowPadding, (0.0f0, 0.0f0))
     CImGui.Begin("##mirage_background_canvas_$(key)", C_NULL, window_flags)
     CImGui.PopStyleVar(3)
-    viewport = draw_canvas!(render!, app, key; reset_context, clear, clear_color, projection)
-    CImGui.End()
-    return viewport
+    try
+        return draw_canvas!(render!, app, key; reset_context, clear, clear_color, projection)
+    finally
+        CImGui.End()
+    end
 end
 
 """

@@ -45,6 +45,13 @@ end
         @test getfield(getfield(Main, example.module_name), :main) isa Function
     end
 
+    @testset "Rotation axis validation" begin
+        matrix = Float32[1 0 0 0; 0 1 0 0; 0 0 1 0; 0 0 0 1]
+        Mirage.rotate!(matrix, 0.5f0, Float32[0, 0, 1])
+        @test matrix != Float32[1 0 0 0; 0 1 0 0; 0 0 1 0; 0 0 0 1]
+        @test_throws ArgumentError Mirage.rotate!(matrix, 0.5f0, Float32[0, 0, 0])
+    end
+
     @testset "Orbital example" begin
         O = Main.OrbitalDynamics
 
