@@ -13,7 +13,6 @@ using FixedPointNumbers: N0f8
 # method signatures with types defined in earlier ones).
 include("./matrices.jl")
 include("./glutils.jl")
-include("./math.jl")
 include("./textures.jl")
 include("./canvas.jl")
 include("./default_font.jl")
