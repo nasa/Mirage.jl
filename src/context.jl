@@ -1,4 +1,3 @@
-# The global RenderContext: shared GPU resources and the active drawing-state stack.
 """
     RenderContext
 

@@ -1,4 +1,3 @@
-# Represents a single vertex attribute (position, normal, etc.)
 """
     VertexAttribute
 

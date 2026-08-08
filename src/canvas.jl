@@ -1,4 +1,3 @@
-# Offscreen render targets (Canvas) and per-frame drawing state (ContextState).
 """
     Canvas
 

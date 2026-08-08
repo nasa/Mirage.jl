@@ -1,4 +1,3 @@
-# Loading images into OpenGL textures.
 """
     load_texture(filepath::String)::GLuint
 
