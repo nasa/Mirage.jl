@@ -6,6 +6,8 @@ an HTML5 Canvas-style drawing API with Dear ImGui and GLFW desktop windows.
 Use it for simulations, visual tools, and custom desktop applications. Mirage is
 used in SHERPA, a lunar mission-planning tool at NASA Ames.
 
+![SHERPA Mirage.jl Demo Screenshot](./sherpa_screenshot.png)
+
 ## Features
 
 - [`MirageApp`](@ref) windows with docking and ImGui panels
