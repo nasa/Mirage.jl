@@ -30,11 +30,11 @@ using CImGui
 
 # --- Edit this function while the app runs -----------------------------------
 # Try changing the color, the number of shapes, or the motion, then save.
-function scene!(canvas, viewport, t)
+function scene!(viewport, t)
     Mirage.fillcolor(Mirage.rgba(15, 15, 22))
-    Mirage.fillrect(0, 0, canvas.width, canvas.height)
+    Mirage.fillrect(0, 0, viewport.width, viewport.height)
 
-    cx, cy = canvas.width / 2, canvas.height / 2
+    cx, cy = viewport.width / 2, viewport.height / 2
     for i in 0:5
         Mirage.save()
         Mirage.translate(cx, cy)
@@ -51,7 +51,7 @@ function main()
     app = MirageApp("Mirage: Live Reload (edit scene!)"; width = 900, height = 600)
     start = time()
     laid_out = Ref(false)
-    run_live!(app; animate = true) do a
+    run_live!(app) do a
         if !laid_out[]
             dock_layout!(a; center = "Scene", top = "Live reload", top_size = 0.15)
             laid_out[] = true
@@ -64,10 +64,11 @@ function main()
         CImGui.PushStyleVar(CImGui.ImGuiStyleVar_WindowPadding, (0.0f0, 0.0f0))
         CImGui.Begin("Scene")
         CImGui.PopStyleVar()
-        draw_canvas!(a, :main) do canvas, viewport
-            scene!(canvas, viewport, time() - start)
+        draw_canvas!(a, :main) do viewport
+            scene!(viewport, time() - start)
         end
         CImGui.End()
+        request_frame!(a)
     end
 end
 

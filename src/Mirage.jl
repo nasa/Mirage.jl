@@ -31,22 +31,10 @@ export
     CanvasViewport,
     run!,
     run_live!,
-    live_revise!,
-    begin_frame!,
-    end_frame!,
     request_frame!,
     stop!,
-    get_canvas!,
-    resize_canvas!,
-    destroy_canvas!,
     draw_canvas!,
     draw_background_canvas!,
-    draw_canvas_image!,
-    begin_dockspace!,
-    end_dockspace!,
-    dock_layout!,
-    set_scroll_callback!,
-    set_key_callback!,
-    set_mouse_button_callback!
+    dock_layout!
 
 end # module Mirage

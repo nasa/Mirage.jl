@@ -278,28 +278,10 @@ function main()
     camera_center = Ref{Vec2}((0.0, 0.0))
     pan_start_mouse = Ref((0.0, 0.0))
     pan_start_center = Ref{Vec2}((0.0, 0.0))
-    canvas_hovered = Ref(false)
-    canvas_size = Ref((1.0, 1.0))
-    canvas_mouse = Ref((0.0, 0.0))
     reference_energy = Ref(total_energy(state; G = gravity[]))
     reference_gravity = Ref(gravity[])
 
-    # Zoom around the point under the cursor, not merely the canvas center. Canvas
-    # metadata comes from the preceding frame because GLFW dispatches scroll before
-    # the next ImGui frame begins.
-    set_scroll_callback!(app) do _window, _xoff, yoff
-        canvas_hovered[] || return
-        old_zoom = Float64(zoom[])
-        new_zoom = clamp(old_zoom * exp(0.14 * Float64(yoff)), 8.0, 220.0)
-        width, height = canvas_size[]
-        mouse = canvas_mouse[]
-        camera_center[] = zoom_camera_at(camera_center[], mouse, width, height,
-                                         old_zoom, new_zoom)
-        zoom[] = Float32(new_zoom)
-        request_frame!(app)
-    end
-
-    run!(app; animate = _ -> running[], menu_bar = true) do a
+    run!(app; menu_bar = true) do a
         if !laid_out[]
             dock_layout!(a; center = "Simulation", left = "Controls", right = "Inspector",
                          left_size = 0.19, right_size = 0.26)
@@ -428,13 +410,19 @@ function main()
         CImGui.PushStyleVar(CImGui.ImGuiStyleVar_WindowPadding, (0.0f0, 0.0f0))
         CImGui.Begin("Simulation")
         CImGui.PopStyleVar()
-        draw_canvas!(a, :orbit; clear_color = (0.025, 0.03, 0.055, 1.0)) do canvas, viewport
-            canvas_hovered[] = viewport.hovered
-            canvas_size[] = (Float64(canvas.width), Float64(canvas.height))
-            canvas_mouse[] = viewport.mouse_rel
+        draw_canvas!(a, :orbit; clear_color = (0.025, 0.03, 0.055, 1.0)) do viewport
+            if viewport.hovered && viewport.scroll_y != 0
+                old_zoom = Float64(zoom[])
+                new_zoom = clamp(old_zoom * exp(0.14 * viewport.scroll_y), 8.0, 220.0)
+                camera_center[] = zoom_camera_at(
+                    camera_center[], viewport.mouse_rel, viewport.width, viewport.height,
+                    old_zoom, new_zoom,
+                )
+                zoom[] = Float32(new_zoom)
+            end
 
             if viewport.clicked
-                hit = nearest_body(state, viewport.mouse_rel, canvas.width, canvas.height,
+                hit = nearest_body(state, viewport.mouse_rel, viewport.width, viewport.height,
                                    zoom[], camera_center[])
                 if hit !== nothing
                     selected[] = hit
@@ -451,8 +439,8 @@ function main()
             end
             if dragged[] !== nothing && viewport.active
                 i = dragged[]
-                state.bodies[i].position = screen_to_world(viewport.mouse_rel, canvas.width,
-                                                           canvas.height, zoom[], camera_center[])
+                state.bodies[i].position = screen_to_world(viewport.mouse_rel, viewport.width,
+                                                           viewport.height, zoom[], camera_center[])
                 state.bodies[i].previous_position = state.bodies[i].position
                 push!(drag_samples, (time(), state.bodies[i].position))
                 cutoff = time() - 0.12
@@ -485,7 +473,7 @@ function main()
                     length(trail) < 2 && continue
                     Mirage.beginpath()
                     for (i, point) in pairs(trail)
-                        p = world_to_screen(point, canvas.width, canvas.height, zoom[],
+                        p = world_to_screen(point, viewport.width, viewport.height, zoom[],
                                             camera_center[])
                         i == 1 ? Mirage.moveto(p...) : Mirage.lineto(p...)
                     end
@@ -496,7 +484,7 @@ function main()
             end
 
             for (i, scene_body) in pairs(state.bodies)
-                p = world_to_screen(scene_body.position, canvas.width, canvas.height, zoom[],
+                p = world_to_screen(scene_body.position, viewport.width, viewport.height, zoom[],
                                     camera_center[])
                 if vectors[]
                     velocity = body_velocity(state, i)
@@ -527,6 +515,7 @@ function main()
             end
         end
         CImGui.End()
+        running[] && request_frame!(a)
     end
 end
 

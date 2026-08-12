@@ -22,7 +22,6 @@ mutable struct MirageApp
     running::Bool
     docking::Bool
     clear_color::NTuple{4, Float32}
-    callbacks::Vector{Any}
 end
 
 """
@@ -31,24 +30,27 @@ end
 Per-frame interaction state for a canvas region drawn with [`draw_canvas!`](@ref).
 
 # Fields
-- `x`, `y`: screen position of the region's top-left corner, in pixels.
-- `width`, `height`: size of the region in pixels.
+- `x`, `y`: screen position of the region's top-left corner, in ImGui coordinates.
+- `width`, `height`: size of the canvas render target in pixels.
 - `hovered`, `focused`, `active`, `clicked`: ImGui interaction flags for the region
   (`active` is true while the mouse button is held on it).
-- `mouse_pos`: cursor position in window coordinates.
-- `mouse_rel`: cursor position relative to the region's top-left corner.
+- `mouse_pos`: cursor position in screen-space ImGui coordinates.
+- `mouse_rel`: cursor position relative to the canvas, in canvas pixels.
+- `scroll_x`, `scroll_y`: mouse-wheel deltas for the current frame.
 """
 struct CanvasViewport
     x::Float64
     y::Float64
-    width::Float64
-    height::Float64
+    width::Int
+    height::Int
     hovered::Bool
     focused::Bool
     active::Bool
     clicked::Bool
     mouse_pos::Tuple{Float64, Float64}
     mouse_rel::Tuple{Float64, Float64}
+    scroll_x::Float32
+    scroll_y::Float32
 end
 
 # Hook installed by the MirageReviseExt package extension when Revise is loaded.
@@ -249,7 +251,6 @@ function MirageApp(
         true,
         docking,
         Float32.(clear_color),
-        Any[],
     )
     # Rasterize the UI font at font_size * dpi so text stays crisp on HiDPI displays
     # (on macOS `dpi` is 1 because the framebuffer already handles Retina scaling).
@@ -271,7 +272,7 @@ end
     request_frame!(app, frames = 1)
 
 Request that `app` render at least `frames` more frames. Wakes an event-driven
-event-driven loop immediately, so timers and background tasks can trigger a repaint
+loop immediately, so timers and background tasks can trigger a repaint
 when data changes. GLFW input events already wake the loop automatically.
 """
 function request_frame!(app::MirageApp, frames::Integer = 1)
@@ -313,6 +314,7 @@ Resize `canvas` to match an ImGui region `size` (clamped to at least 1x1 pixels)
 function resize_canvas!(canvas::Canvas, size::CImGui.ImVec2)
     width = max(1, Int(trunc(size.x)))
     height = max(1, Int(trunc(size.y)))
+    canvas.width == width && canvas.height == height && return canvas
     resize!(canvas, width, height)
     return canvas
 end
@@ -352,22 +354,19 @@ end
     draw_canvas!(render!, app, key = :main; kwargs...)
 
 Draw an interactive Mirage canvas region inside the current ImGui window. Sizes the
-canvas to the available content region (or `size`), invokes `render!(canvas, viewport)`
-with Mirage bound to that canvas, then blits the result. Returns the [`CanvasViewport`](@ref)
-describing this frame's interaction state.
+canvas to the available content region (or `size`), invokes `render!(viewport)` with
+Mirage bound to that canvas, then blits the result. Returns the
+[`CanvasViewport`](@ref) describing this frame's interaction state.
 
 By default the canvas is ready to draw in pixel coordinates: a 2D orthographic
-projection sized to the canvas is applied before `render!` runs. Pass
-`projection = :none` to skip that (e.g. when setting your own perspective camera
-via `Mirage.update_perspective_projection_matrix`).
+projection sized to the canvas is applied before `render!` runs. The callback can
+replace it with a perspective or custom projection before drawing.
 
 # Keyword arguments
 - `size`: explicit region size; defaults to the available ImGui content region.
 - `label`: unique ImGui id for the interaction button.
-- `reset_context`: reset Mirage's context stack before drawing (default `true`).
-- `clear`: clear the canvas before drawing (default `true`).
-- `clear_color`: RGBA clear color (default transparent).
-- `projection`: `:ortho` (default) for a pixel-space 2D projection, or `:none`.
+- `clear_color`: RGBA clear color (default transparent), or `nothing` to preserve
+  the existing canvas contents.
 """
 function draw_canvas!(
     render!::Function,
@@ -375,13 +374,8 @@ function draw_canvas!(
     key::Symbol = :main;
     size = nothing,
     label::AbstractString = "##mirage_canvas_$(key)",
-    reset_context::Bool = true,
-    clear::Bool = true,
-    clear_color::NTuple{4, Real} = (0, 0, 0, 0),
-    projection::Symbol = :ortho,
+    clear_color::Union{Nothing, NTuple{4, Real}} = (0, 0, 0, 0),
 )
-    projection in (:ortho, :none) ||
-        throw(ArgumentError("projection must be :ortho or :none, got :$projection"))
     canvas = get_canvas!(app, key)
     requested_size = size === nothing ? CImGui.GetContentRegionAvail() : size
     viewport_pos = CImGui.GetCursorScreenPos()
@@ -393,32 +387,43 @@ function draw_canvas!(
     focused = CImGui.IsItemFocused()
     active = CImGui.IsItemActive()
     clicked = CImGui.IsItemClicked()
-    cursor_pos = GLFW.GetCursorPos(app.window)
-    mouse_pos = (cursor_pos.x, cursor_pos.y)
-    mouse_rel = (mouse_pos[1] - item_pos.x, mouse_pos[2] - item_pos.y)
-
     resize_canvas!(canvas, item_size)
-    viewport = CanvasViewport(item_pos.x, item_pos.y, item_size.x, item_size.y,
-                              hovered, focused, active, clicked, mouse_pos, mouse_rel)
+    cursor_pos = CImGui.GetMousePos()
+    mouse_pos = (Float64(cursor_pos.x), Float64(cursor_pos.y))
+    scale_x = canvas.width / max(Float64(item_size.x), eps(Float64))
+    scale_y = canvas.height / max(Float64(item_size.y), eps(Float64))
+    mouse_rel = (
+        (mouse_pos[1] - item_pos.x) * scale_x,
+        (mouse_pos[2] - item_pos.y) * scale_y,
+    )
+    io = CImGui.GetIO()
+    scroll_x = Float32(unsafe_load(io.MouseWheelH))
+    scroll_y = Float32(unsafe_load(io.MouseWheel))
+    viewport = CanvasViewport(
+        item_pos.x, item_pos.y, canvas.width, canvas.height,
+        hovered, focused, active, clicked, mouse_pos, mouse_rel, scroll_x, scroll_y
+    )
+
+    previous_framebuffer = Ref{GLint}()
+    previous_viewport = Vector{GLint}(undef, 4)
+    glGetIntegerv(GL_FRAMEBUFFER_BINDING, previous_framebuffer)
+    glGetIntegerv(GL_VIEWPORT, previous_viewport)
+    previous_context_stack = get_context().context_stack
 
     set_canvas(canvas)
     try
-        if reset_context
-            get_context().context_stack = [ContextState()]
-        end
-        if clear
-            glViewport(0, 0, canvas.width, canvas.height)
+        if !isnothing(clear_color)
             glClearColor(Float32.(clear_color)...)
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT)
         end
-        if projection === :ortho
-            # Pixel-space 2D projection sized to the canvas, so render! can draw
-            # immediately; opt out with projection = :none for custom 3D cameras.
-            update_ortho_projection_matrix(canvas.width, canvas.height, 1.0)
-        end
-        Base.invokelatest(render!, canvas, viewport)
+        # Pixel-space 2D projection sized to the canvas, so render! can draw
+        # immediately. User can override this later if they want.
+        update_ortho_projection_matrix(canvas.width, canvas.height, 1.0)
+        Base.invokelatest(render!, viewport)
     finally
-        set_canvas()
+        glBindFramebuffer(GL_FRAMEBUFFER, GLuint(previous_framebuffer[]))
+        glViewport(previous_viewport...)
+        get_context().context_stack = previous_context_stack
     end
 
     draw_canvas_image!(canvas, item_pos, item_size)
@@ -434,8 +439,8 @@ behind any floating ImGui panels. This is the "the canvas is the app, controls f
 on top" layout (maps, viewers, dashboards). Other ImGui windows drawn in the same
 frame appear above it.
 
-Takes the same keyword arguments as [`draw_canvas!`](@ref) (`size` excepted — the size
-is always the full viewport) and returns the same [`CanvasViewport`](@ref).
+Accepts the same `clear_color` option as [`draw_canvas!`](@ref); the size is always
+the full viewport. Returns the same [`CanvasViewport`](@ref).
 
 Works with docking enabled (the default): the dockspace's passthrough central node
 lets the background canvas show and receive input, while other windows remain
@@ -446,10 +451,7 @@ function draw_background_canvas!(
     render!::Function,
     app::MirageApp,
     key::Symbol = :main;
-    clear::Bool = true,
-    clear_color::NTuple{4, Real} = (0, 0, 0, 0),
-    reset_context::Bool = true,
-    projection::Symbol = :ortho,
+    clear_color::Union{Nothing, NTuple{4, Real}} = (0, 0, 0, 0),
 )
     imvp = CImGui.GetMainViewport()
     CImGui.SetNextWindowPos(unsafe_load(imvp.Pos))
@@ -457,14 +459,13 @@ function draw_background_canvas!(
     window_flags = CImGui.ImGuiWindowFlags_NoTitleBar | CImGui.ImGuiWindowFlags_NoCollapse
     window_flags |= CImGui.ImGuiWindowFlags_NoResize | CImGui.ImGuiWindowFlags_NoMove
     window_flags |= CImGui.ImGuiWindowFlags_NoBringToFrontOnFocus | CImGui.ImGuiWindowFlags_NoNavFocus
-
     CImGui.PushStyleVar(CImGui.ImGuiStyleVar_WindowRounding, 0.0f0)
     CImGui.PushStyleVar(CImGui.ImGuiStyleVar_WindowBorderSize, 0.0f0)
     CImGui.PushStyleVar(CImGui.ImGuiStyleVar_WindowPadding, (0.0f0, 0.0f0))
     CImGui.Begin("##mirage_background_canvas_$(key)", C_NULL, window_flags)
     CImGui.PopStyleVar(3)
     try
-        return draw_canvas!(render!, app, key; reset_context, clear, clear_color, projection)
+        return draw_canvas!(render!, app, key; clear_color)
     finally
         CImGui.End()
     end
@@ -575,21 +576,20 @@ _wait_events_timeout(timeout::Real) =
     ccall((:glfwWaitEventsTimeout, GLFW.libglfw), Cvoid, (Cdouble,), timeout)
 
 """
-    begin_frame!(app; animate = false, idle_timeout = 0.1)
+    begin_frame!(app; idle_timeout = 0.1)
 
 Start a new frame: pump GLFW events, clear the default framebuffer, and begin the
 ImGui frame. Pair with [`end_frame!`](@ref).
 
-When `animate` is false and no frame was requested via [`request_frame!`](@ref),
-blocks waiting for input events — waking at least every `idle_timeout` seconds so
-background tasks (timers, `@async`, Revise) stay responsive.
+When no frame was requested via [`request_frame!`](@ref), blocks waiting for input
+events — waking at least every `idle_timeout` seconds so background tasks (timers,
+`@async`, Revise) stay responsive.
 """
 function begin_frame!(
     app::MirageApp;
-    animate::Bool = false,
     idle_timeout::Real = 0.1,
 )
-    if app.requested_frames > 0 || animate
+    if app.requested_frames > 0
         GLFW.PollEvents()
         app.requested_frames = max(app.requested_frames - 1, 0)
     else
@@ -658,11 +658,6 @@ and frames are skipped until the code is fixed — with Revise loaded (see
 [`run_live!`](@ref)) you can edit the broken function and the app recovers in place.
 
 # Keyword arguments
-- `animate`: `false` (default) waits for input and renders low-rate maintenance
-  frames while idle. Set it to `true` for continuous animation. Pass a function
-  `app -> Bool` to decide per frame, e.g. animate only while a simulation is
-  playing. Timers and background tasks should call [`request_frame!`](@ref) after
-  changing visible state.
 - `idle_timeout`: in event-driven mode, maximum seconds to wait before a
   maintenance frame (default `0.1`). These frames keep Julia tasks and live reload
   responsive without rendering continuously.
@@ -673,13 +668,13 @@ and frames are skipped until the code is fixed — with Revise loaded (see
 function run!(
     frame!::Function,
     app::MirageApp;
-    animate::Union{Bool, Function} = false,
     before_frame!::Function = app -> nothing,
     idle_timeout::Real = 0.1,
     menu_bar::Bool = false,
     cleanup!::Function = app -> nothing,
 )
     last_frame_time = time()
+    app.requested_frames = max(app.requested_frames, 1)
     try
         while app.running && !GLFW.WindowShouldClose(app.window)
             current_frame_time = time()
@@ -687,8 +682,7 @@ function run!(
             last_frame_time = current_frame_time
 
             Base.invokelatest(before_frame!, app)
-            should_animate = animate isa Bool ? animate : Base.invokelatest(animate, app)::Bool
-            begin_frame!(app; animate = should_animate, idle_timeout)
+            begin_frame!(app; idle_timeout)
             if app.docking
                 begin_dockspace!(app; menu_bar)
                 try
@@ -734,42 +728,6 @@ function run_live!(
                  use `Revise.includet` or `Revise.track`.""" maxlog = 1
     end
     return run!(frame!, app; before_frame!, kwargs...)
-end
-
-"""
-    set_scroll_callback!(callback, app)
-
-Register a GLFW scroll `callback` on `app`'s window and retain it against garbage
-collection. Returns the callback.
-"""
-function set_scroll_callback!(callback::Function, app::MirageApp)
-    push!(app.callbacks, callback)
-    GLFW.SetScrollCallback(app.window, callback)
-    return callback
-end
-
-"""
-    set_key_callback!(callback, app)
-
-Register a GLFW key `callback` on `app`'s window and retain it against garbage
-collection. Returns the callback.
-"""
-function set_key_callback!(callback::Function, app::MirageApp)
-    push!(app.callbacks, callback)
-    GLFW.SetKeyCallback(app.window, callback)
-    return callback
-end
-
-"""
-    set_mouse_button_callback!(callback, app)
-
-Register a GLFW mouse-button `callback` on `app`'s window and retain it against
-garbage collection. Returns the callback.
-"""
-function set_mouse_button_callback!(callback::Function, app::MirageApp)
-    push!(app.callbacks, callback)
-    GLFW.SetMouseButtonCallback(app.window, callback)
-    return callback
 end
 
 """

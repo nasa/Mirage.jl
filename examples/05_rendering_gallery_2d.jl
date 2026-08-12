@@ -93,14 +93,14 @@ function render_badge!(canvas)
     end
 end
 
-function gallery_scene!(canvas, image_texture, badge, t)
+function gallery_scene!(viewport, image_texture, badge, t)
     margin = 30.0
     gap = 22.0
     header_height = 76.0
     footer_height = 48.0
-    column = (canvas.width - 2margin - 2gap) / 3
+    column = (viewport.width - 2margin - 2gap) / 3
     card_y = header_height
-    card_height = canvas.height - header_height - footer_height
+    card_height = viewport.height - header_height - footer_height
     card_x = (margin, margin + column + gap, margin + 2(column + gap))
 
     Mirage.save()
@@ -203,7 +203,7 @@ function gallery_scene!(canvas, image_texture, badge, t)
     Mirage.stroke()
 
     Mirage.save()
-    Mirage.translate(margin, canvas.height - 30)
+    Mirage.translate(margin, viewport.height - 30)
     Mirage.fillcolor(Mirage.rgba(147, 171, 210))
     Mirage.text("FILLS  /  STROKES  /  PATHS  /  TRANSFORMS  /  TEXT  /  TEXTURES")
     Mirage.restore()
@@ -228,11 +228,12 @@ function main()
         end
 
         run_started = true
-        run!(app; animate = true, cleanup! = cleanup) do a
+        run!(app; cleanup! = cleanup) do a
             draw_background_canvas!(a, :gallery;
-                                    clear_color = (0.035, 0.04, 0.065, 1.0)) do canvas, _
-                gallery_scene!(canvas, image_texture, badge, time() - start_time)
+                                    clear_color = (0.035, 0.04, 0.065, 1.0)) do viewport
+                gallery_scene!(viewport, image_texture, badge, time() - start_time)
             end
+            request_frame!(a)
         end
     catch
         if !run_started

@@ -21,9 +21,7 @@ function main()
     speed = Ref(1.0f0)
     laid_out = Ref(false)
 
-    # Event-driven rendering is the default. This scene animates continuously, so
-    # it opts in explicitly with animate = true.
-    run!(app; animate = true) do a
+    run!(app) do a
         # Dock the canvas to fill the center with the controls on the left (runs once;
         # windows stay user-dockable afterward).
         if !laid_out[]
@@ -42,15 +40,16 @@ function main()
         CImGui.PopStyleVar()
         # draw_canvas! sizes the canvas to the window's content region and applies a
         # pixel-space 2D projection by default — draw immediately.
-        draw_canvas!(a, :main) do canvas, viewport
+        draw_canvas!(a, :main) do viewport
             Mirage.save()
-            Mirage.translate(canvas.width / 2, canvas.height / 2)
+            Mirage.translate(viewport.width / 2, viewport.height / 2)
             Mirage.rotate(time() * speed[])
             Mirage.fillcolor(Mirage.rgba(80, 160, 255))
             Mirage.fillrect(-60, -60, 120, 120)
             Mirage.restore()
         end
         CImGui.End()
+        request_frame!(a)
     end
 end
 

@@ -25,17 +25,20 @@ offscreen canvases that ImGui displays:
 - [`draw_background_canvas!`](@ref) fills the window.
 - [`draw_canvas!`](@ref) fills the current ImGui content region.
 
-Canvas callbacks receive `(canvas, viewport)`. The viewport contains mouse and
-interaction state. The default projection uses pixel coordinates. For 3D, pass
-`projection = :none` and configure a perspective camera.
+Canvas callbacks receive a viewport containing the render-target dimensions and
+mouse interaction state, including wheel deltas. The callback starts with a
+pixel-coordinate projection; 3D renderers can replace it with a perspective camera
+before drawing. Query keyboard and application-wide mouse input through CImGui in
+the frame callback.
 
 ## Rendering modes
 
 `run!` is event-driven by default. Input wakes it automatically. Call
 [`request_frame!`](@ref) after background work changes visible state.
 
-Use `animate = true` for continuous rendering, or pass `app -> Bool` to switch at
-runtime. [`stop!`](@ref) exits the loop.
+For continuous rendering, request the next frame from the current frame. Request
+conditionally to animate only while a simulation is running. [`stop!`](@ref) exits
+the loop.
 
 ## Drawing state
 

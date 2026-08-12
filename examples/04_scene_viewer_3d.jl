@@ -194,13 +194,6 @@ function main()
         texture = create_checkerboard_texture()
         shader = initialize_phong_shader()
 
-        # The app retains callback objects for their full GLFW lifetime; destroying
-        # the app unregisters them with the window.
-        set_scroll_callback!(app) do _window, _xoff, yoff
-            distance[] = clamp(distance[] - Float32(yoff) * 0.6f0, 4.0f0, 24.0f0)
-            request_frame!(app)
-        end
-
         cleanup = function (_app)
             Mirage.glDisable(Mirage.GL_DEPTH_TEST)
             Mirage.glBindTexture(Mirage.GL_TEXTURE_2D, 0)
@@ -213,9 +206,12 @@ function main()
         end
 
         run_started = true
-        run!(app; animate = _ -> auto_rotate[], cleanup! = cleanup) do _a
-            draw_background_canvas!(app, :scene; projection = :none,
-                                    clear_color = (0.025, 0.03, 0.055, 1.0)) do canvas, viewport
+        run!(app; cleanup! = cleanup) do a
+            draw_background_canvas!(app, :scene;
+                                    clear_color = (0.025, 0.03, 0.055, 1.0)) do viewport
+                if viewport.hovered && viewport.scroll_y != 0
+                    distance[] = clamp(distance[] - viewport.scroll_y * 0.6f0, 4.0f0, 24.0f0)
+                end
                 if viewport.clicked
                     last_mouse[] = viewport.mouse_rel
                 end
@@ -235,7 +231,7 @@ function main()
                     dx = viewport.mouse_rel[1] - last_mouse[][1]
                     dy = viewport.mouse_rel[2] - last_mouse[][2]
                     target[] = pan_camera_target(
-                        target[], yaw[], pitch[], distance[], (dx, dy), canvas.height,
+                        target[], yaw[], pitch[], distance[], (dx, dy), viewport.height,
                     )
                     last_mouse[] = viewport.mouse_rel
                 elseif panning[]
@@ -255,7 +251,7 @@ function main()
 
                 Mirage.glEnable(Mirage.GL_DEPTH_TEST)
                 Mirage.update_perspective_projection_matrix(
-                    canvas.width, canvas.height, 1.0;
+                    viewport.width, viewport.height, 1.0;
                     near = 0.01, far = 100.0, fov = pi / 4,
                 )
                 Mirage.lookat(camera, Float32[look_at...], Float32[0, 0, 1])
@@ -314,6 +310,7 @@ function main()
             CImGui.Text("camera distance: $(round(distance[]; digits = 1))")
             CImGui.Text("procedural cube + sphere, OBJ, checkerboard, Phong")
             CImGui.End()
+            auto_rotate[] && request_frame!(a)
         end
     catch
         # Setup can fail before run! takes ownership of cleanup.
