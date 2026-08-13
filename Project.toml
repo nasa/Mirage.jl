@@ -1,7 +1,7 @@
 name = "Mirage"
 uuid = "e54eaeca-a684-404c-9867-c26beaca1479"
 authors = ["groverburger <19754251+groverburger@users.noreply.github.com>"]
-version = "0.1.0"
+version = "0.2.0"
 
 [deps]
 CImGui = "5d785b6c-b76f-510e-a07c-3070796c7e87"
